@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 // Pages
 import Home from "./pages/Home";
 import About from "./pages/About";
+import Recognition from "./pages/Recognition";
 import StudentPortal from "./pages/StudentPortal";
 import TrainingProviders from "./pages/TrainingProviders";
 import VerifyCertificate from "./pages/VerifyCertificate";
@@ -24,6 +25,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
+          <Route path="/recognition" element={<Recognition />} />
           <Route path="/student-portal" element={<StudentPortal />} />
           <Route path="/training-providers" element={<TrainingProviders />} />
           <Route path="/verify-certificate" element={<VerifyCertificate />} />
