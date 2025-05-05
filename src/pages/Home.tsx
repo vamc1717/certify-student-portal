@@ -3,14 +3,14 @@ import MainLayout from "@/components/layout/MainLayout";
 import TrainingSector from "@/components/home/TrainingSector";
 import { Button } from "@/components/ui/button";
 import { 
-  Graduation, School, Building, Briefcase, Award, Video, User, Users, Check 
+  GraduationCap, School, Building, Briefcase, Award, Video, User, Users, Check 
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Home = () => {
   // Training sectors with icons
   const sectors = [
-    { title: "Education & Teaching", icon: <Graduation />, link: "/courses/education" },
+    { title: "Education & Teaching", icon: <GraduationCap />, link: "/courses/education" },
     { title: "Information Technology", icon: <School />, link: "/courses/it" },
     { title: "Healthcare", icon: <Building />, link: "/courses/healthcare" },
     { title: "Business Management", icon: <Briefcase />, link: "/courses/business" },
@@ -69,7 +69,7 @@ const Home = () => {
           <div className="grid md:grid-cols-3 gap-8">
             <div className="education-card p-6">
               <div className="text-blue-600 mb-4">
-                <Graduation size={40} />
+                <GraduationCap size={40} />
               </div>
               <h3 className="text-xl font-semibold mb-3">Student Portal</h3>
               <p className="text-gray-600">
