@@ -19,7 +19,7 @@ const Footer = () => {
                 <Link to="/recognition" className="text-gray-300 hover:text-white">Recognition</Link>
               </li>
               <li>
-                <Link to="/contact" className="text-gray-300 hover:text-white">Contact Us</Link>
+                <Link to="/contact-us" className="text-gray-300 hover:text-white">Contact Us</Link>
               </li>
             </ul>
           </div>
@@ -43,18 +43,16 @@ const Footer = () => {
                 <Link to="/training-providers" className="text-gray-300 hover:text-white">Training Providers</Link>
               </li>
               <li>
-                <Link to="/mou" className="text-gray-300 hover:text-white">MOU</Link>
+                <Link to="/course-management" className="text-gray-300 hover:text-white">Course Management</Link>
               </li>
             </ul>
           </div>
         </div>
         
-        <div className="border-t border-gray-700 mt-8 pt-6 flex flex-col md:flex-row justify-between items-center">
-          <p className="text-gray-400">© {new Date().getFullYear()} Certify Education Platform. All rights reserved.</p>
-          <div className="mt-4 md:mt-0 flex space-x-4">
-            <a href="#" className="text-gray-400 hover:text-white">Privacy Policy</a>
-            <a href="#" className="text-gray-400 hover:text-white">Terms of Service</a>
-          </div>
+        <div className="border-t border-gray-700 mt-8 pt-6">
+          <p className="text-gray-400 text-center text-sm">
+            Dr. APJ Abdul Kalam Technical Education Council of Skill Development 2017 - 2021 | kh. No 158/1/2 Ground Floor, Samta Vihar Village Mukandpur Near Rajan, New Delhi-110042 © All Rights Reserved.
+          </p>
         </div>
       </div>
     </footer>
