@@ -12,6 +12,8 @@ import Recognition from "./pages/Recognition";
 import StudentPortal from "./pages/StudentPortal";
 import TrainingProviders from "./pages/TrainingProviders";
 import VerifyCertificate from "./pages/VerifyCertificate";
+import ContactUs from "./pages/ContactUs";
+import CourseManagement from "./pages/CourseManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +31,8 @@ const App = () => (
           <Route path="/student-portal" element={<StudentPortal />} />
           <Route path="/training-providers" element={<TrainingProviders />} />
           <Route path="/verify-certificate" element={<VerifyCertificate />} />
+          <Route path="/contact-us" element={<ContactUs />} />
+          <Route path="/course-management" element={<CourseManagement />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
