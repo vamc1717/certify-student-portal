@@ -1,11 +1,13 @@
-
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Download, FileDown, FileText, LogOut } from "lucide-react";
+import { Download, Eye, FileText, LogOut, Printer } from "lucide-react";
+import CertificateView from "@/components/certificates/CertificateView";
+import CertificateModal from "@/components/certificates/CertificateModal";
+import { Certificate } from "@/types/certificate";
 
 // Mock data for student results and certificates
 const mockResults = [
@@ -15,6 +17,30 @@ const mockResults = [
   { subject: "Web Development", internalMarks: 33, externalMarks: 50, totalMarks: 83, grade: "B" }
 ];
 
+// Mock certificate data
+const mockCertificate: Certificate = {
+  id: "cert-1001",
+  serialNumber: "1008/2017",
+  studentName: "Rudrapathi Sharma",
+  fatherName: "Pasupathi Sharma",
+  dateOfBirth: "11-12-1984",
+  course: "Diploma in Fire Safety",
+  examDate: "15-04-2023",
+  registrationNumber: "STU2023001",
+  district: "New Delhi",
+  state: "Delhi",
+  subjects: [
+    { name: "Fire Tech & Design", maxMarks: 50, marksSecured: 38 },
+    { name: "Construction Safety", maxMarks: 50, marksSecured: 38 },
+    { name: "Industrial Safety", maxMarks: 50, marksSecured: 38 },
+    { name: "Environmental Safety", maxMarks: 50, marksSecured: 38 }
+  ],
+  grade: "A",
+  totalMaxMarks: 500,
+  totalMarksSecured: 391,
+  issueDate: "20-04-2023"
+};
+
 const mockCertificates = [
   { id: 1, name: "Course Completion Certificate", course: "Computer Science", issueDate: "15 Apr 2023", status: "Issued" },
   { id: 2, name: "Merit Certificate", course: "Database Management", issueDate: "20 Mar 2023", status: "Issued" }
@@ -23,8 +49,20 @@ const mockCertificates = [
 const StudentDashboard = () => {
   const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
+  const [selectedCertificate, setSelectedCertificate] = useState<Certificate | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   if (!user) return null;
+
+  const openCertificateModal = () => {
+    setSelectedCertificate(mockCertificate);
+    setIsModalOpen(true);
+  };
+
+  const closeCertificateModal = () => {
+    setIsModalOpen(false);
+    setTimeout(() => setSelectedCertificate(null), 300); // Clear after animation completes
+  };
 
   return (
     <MainLayout>
@@ -45,10 +83,11 @@ const StudentDashboard = () => {
 
       <div className="container mx-auto px-4 py-6">
         <Tabs defaultValue="overview" className="w-full" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full md:grid-cols-5 grid-cols-2 gap-2 md:gap-0">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="results">Results</TabsTrigger>
             <TabsTrigger value="certificates">Certificates</TabsTrigger>
+            <TabsTrigger value="marksheet">Marksheet</TabsTrigger>
             <TabsTrigger value="profile">Profile</TabsTrigger>
           </TabsList>
           
@@ -98,7 +137,7 @@ const StudentDashboard = () => {
                     >
                       <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
                       <circle cx="9" cy="7" r="4" />
-                      <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+                      <path d="M22 21v-2a4 4 0 0 1 0 7.75" />
                     </svg>
                   </CardHeader>
                   <CardContent>
@@ -238,7 +277,7 @@ const StudentDashboard = () => {
                         <th className="p-4 text-left">Course</th>
                         <th className="p-4 text-center">Issue Date</th>
                         <th className="p-4 text-center">Status</th>
-                        <th className="p-4 text-center">Action</th>
+                        <th className="p-4 text-center">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -253,10 +292,20 @@ const StudentDashboard = () => {
                             </span>
                           </td>
                           <td className="p-4 text-center">
-                            <Button variant="outline" size="sm">
-                              <Download className="mr-2 h-4 w-4" />
-                              Download
-                            </Button>
+                            <div className="flex justify-center space-x-2">
+                              <Button variant="outline" size="sm" onClick={openCertificateModal}>
+                                <Eye className="h-4 w-4" />
+                                <span className="sr-only">View</span>
+                              </Button>
+                              <Button variant="outline" size="sm" onClick={openCertificateModal}>
+                                <Download className="h-4 w-4" />
+                                <span className="sr-only">Download</span>
+                              </Button>
+                              <Button variant="outline" size="sm" onClick={openCertificateModal}>
+                                <Printer className="h-4 w-4" />
+                                <span className="sr-only">Print</span>
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -290,6 +339,51 @@ const StudentDashboard = () => {
                       ></textarea>
                     </div>
                     <Button>Submit Request</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="marksheet" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Marksheet & Certificate</CardTitle>
+                  <CardDescription>
+                    View, download or print your official marksheet
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    <div className="flex flex-col md:flex-row gap-4 justify-between">
+                      <div>
+                        <h3 className="font-medium mb-2">Course: Diploma in Fire Safety</h3>
+                        <p className="text-sm text-gray-500">
+                          Certificate serial number: {mockCertificate.serialNumber}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Issued on: {mockCertificate.issueDate}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={openCertificateModal}>
+                          <Eye className="mr-2 h-4 w-4" />
+                          View
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={openCertificateModal}>
+                          <Download className="mr-2 h-4 w-4" />
+                          Download
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={openCertificateModal}>
+                          <Printer className="mr-2 h-4 w-4" />
+                          Print
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="border rounded-md p-4 bg-gray-50">
+                      <h3 className="font-medium mb-4">Certificate Preview</h3>
+                      <CertificateView certificate={mockCertificate} isPreview={true} />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -368,6 +462,13 @@ const StudentDashboard = () => {
           </div>
         </Tabs>
       </div>
+
+      {/* Certificate Modal */}
+      <CertificateModal
+        certificate={selectedCertificate}
+        isOpen={isModalOpen}
+        onClose={closeCertificateModal}
+      />
     </MainLayout>
   );
 };
