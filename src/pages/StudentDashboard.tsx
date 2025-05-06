@@ -255,7 +255,7 @@ const StudentDashboard = () => {
               
               <div className="flex justify-center">
                 <Button>
-                  <FileDown className="mr-2 h-4 w-4" />
+                  <FileText className="mr-2 h-4 w-4" />
                   Download Marksheet
                 </Button>
               </div>
