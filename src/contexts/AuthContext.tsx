@@ -1,5 +1,5 @@
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { User, UserRole, LoginCredentials } from '@/types/auth';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -148,7 +148,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         description: "A verification code has been sent to your email.",
       });
       
-      return true;
+      // Changed from returning boolean to void to match interface
     } catch (error) {
       toast({
         title: "Error",
@@ -223,7 +223,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Check for existing user session
-  useState(() => {
+  useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       try {
@@ -233,7 +233,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.removeItem('user');
       }
     }
-  });
+  }, []);
 
   return (
     <AuthContext.Provider 

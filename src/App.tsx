@@ -47,6 +47,7 @@ const App = () => (
             <Route path="/about" element={<About />} />
             <Route path="/recognition" element={<Recognition />} />
             <Route path="/contact-us" element={<ContactUs />} />
+            <Route path="/contact" element={<ContactUs />} /> {/* Added route alias for /contact to resolve 404 */}
             
             {/* Authentication Routes */}
             <Route path="/student-portal" element={<StudentPortal />} />
