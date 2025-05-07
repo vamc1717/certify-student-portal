@@ -43,6 +43,9 @@ const Header = () => {
               <Link to="/recognition" className="text-white hover:text-blue-200 px-3 py-2">
                 Recognition
               </Link>
+              <Link to="/mou" className="text-white hover:text-blue-200 px-3 py-2">
+                MOU
+              </Link>
               <Link to="/contact-us" className="text-white hover:text-blue-200 px-3 py-2">
                 Contact Us
               </Link>
@@ -79,6 +82,13 @@ const Header = () => {
                 onClick={() => setIsMenuOpen(false)}
               >
                 Recognition
+              </Link>
+              <Link 
+                to="/mou" 
+                className="text-white hover:text-blue-200 px-3 py-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                MOU
               </Link>
               <Link 
                 to="/contact-us" 

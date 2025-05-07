@@ -17,7 +17,7 @@ const CertificateView = ({ certificate, onClose, isPreview = false }: Certificat
 
   const handlePrint = useReactToPrint({
     documentTitle: `Certificate-${certificate.id}`,
-    content: () => certificateRef.current,
+    onBeforeGetContent: () => certificateRef.current,
   });
 
   const handleDownload = () => {

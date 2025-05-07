@@ -17,6 +17,7 @@ import VerifyCertificate from "./pages/VerifyCertificate";
 import ContactUs from "./pages/ContactUs";
 import CourseManagement from "./pages/CourseManagement";
 import NotFound from "./pages/NotFound";
+import MOU from "./pages/MOU";
 
 // Login Pages
 import StateLogin from "./pages/StateLogin";
@@ -46,6 +47,7 @@ const App = () => (
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
             <Route path="/recognition" element={<Recognition />} />
+            <Route path="/mou" element={<MOU />} />
             <Route path="/contact-us" element={<ContactUs />} />
             <Route path="/contact" element={<ContactUs />} /> {/* Added route alias for /contact to resolve 404 */}
             
