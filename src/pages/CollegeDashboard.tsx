@@ -1,31 +1,169 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, FileText, LogOut, Plus, QrCode, Users } from "lucide-react";
-
-// Mock data for students and courses
-const mockStudents = [
-  { id: 1, name: "Rahul Sharma", regNumber: "STU2023001", course: "Computer Science", attendance: "85%", status: "Active" },
-  { id: 2, name: "Priya Singh", regNumber: "STU2023002", course: "Electronics", attendance: "92%", status: "Active" },
-  { id: 3, name: "Amit Kumar", regNumber: "STU2023003", course: "Mechanical", attendance: "78%", status: "Active" },
-  { id: 4, name: "Anjali Gupta", regNumber: "STU2023004", course: "Civil", attendance: "62%", status: "Warning" }
-];
-
-const mockCourses = [
-  { id: 1, name: "Computer Science", students: 45, subjects: 8, duration: "2 Years" },
-  { id: 2, name: "Electronics", students: 32, subjects: 7, duration: "3 Years" },
-  { id: 3, name: "Mechanical Engineering", students: 28, subjects: 9, duration: "4 Years" },
-  { id: 4, name: "Civil Engineering", students: 20, subjects: 8, duration: "4 Years" }
-];
+import { BookOpen, FileText, LogOut, Plus, QrCode, Users, Pencil, Trash } from "lucide-react";
+import { EntityModal } from "@/components/shared/EntityModal";
+import {
+  initializeLocalStorage,
+  getStudents,
+  getCourses,
+  addItem,
+  updateItem,
+  deleteItem
+} from "@/utils/localStorage";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 const CollegeDashboard = () => {
   const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
   const [showQRCode, setShowQRCode] = useState(false);
+  const [students, setStudents] = useState<any[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
+  const [editingItem, setEditingItem] = useState<any>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  // Fields definitions for entity forms
+  const studentFields = [
+    { name: "name", label: "Name", type: "text" },
+    { name: "regNumber", label: "Registration No", type: "text" },
+    { name: "course", label: "Course", type: "select", options: courses.map(c => ({ value: c.name, label: c.name })) },
+    { name: "attendance", label: "Attendance", type: "text" },
+    { name: "status", label: "Status", type: "select", options: [
+      { value: "Active", label: "Active" },
+      { value: "Warning", label: "Warning" },
+      { value: "Completed", label: "Completed" }
+    ] },
+    { name: "completed", label: "Course Completed", type: "select", options: [
+      { value: "true", label: "Yes" },
+      { value: "false", label: "No" }
+    ] }
+  ];
+
+  const courseFields = [
+    { name: "name", label: "Course Name", type: "text" },
+    { name: "subjects", label: "Subjects", type: "number" },
+    { name: "duration", label: "Duration", type: "text" },
+  ];
+
+  useEffect(() => {
+    // Initialize localStorage with default data if not already present
+    initializeLocalStorage();
+    
+    // Load data from localStorage specific to this college
+    loadData();
+  }, [user]);
+
+  const loadData = () => {
+    if (!user?.organizationName) return;
+    
+    const loadedStudents = getStudents(user.organizationName);
+    const loadedCourses = getCourses(user.organizationName);
+    
+    setStudents(loadedStudents);
+    setCourses(loadedCourses);
+  };
+
+  const handleAddStudent = (data: any) => {
+    if (!user?.organizationName) return;
+    
+    addItem('students', {
+      ...data, 
+      college: user.organizationName,
+      completed: data.completed === "true", // Convert string to boolean
+    });
+    
+    // Update college's student count
+    const colleges = JSON.parse(localStorage.getItem('colleges') || '[]');
+    const collegeIndex = colleges.findIndex((c: any) => c.name === user.organizationName);
+    
+    if (collegeIndex !== -1) {
+      colleges[collegeIndex].students = (colleges[collegeIndex].students || 0) + 1;
+      localStorage.setItem('colleges', JSON.stringify(colleges));
+    }
+    
+    loadData();
+    toast.success("Student added successfully");
+  };
+
+  const handleEditStudent = (data: any) => {
+    const updatedData = {
+      ...data,
+      completed: data.completed === "true"
+    };
+    updateItem('students', editingItem.id, updatedData);
+    loadData();
+    setIsEditModalOpen(false);
+    toast.success("Student updated successfully");
+  };
+
+  const handleDeleteStudent = (id: number) => {
+    deleteItem('students', id);
+    
+    // Update college's student count
+    if (user?.organizationName) {
+      const colleges = JSON.parse(localStorage.getItem('colleges') || '[]');
+      const collegeIndex = colleges.findIndex((c: any) => c.name === user.organizationName);
+      
+      if (collegeIndex !== -1 && colleges[collegeIndex].students > 0) {
+        colleges[collegeIndex].students -= 1;
+        localStorage.setItem('colleges', JSON.stringify(colleges));
+      }
+    }
+    
+    loadData();
+    toast.success("Student deleted successfully");
+  };
+
+  const handleAddCourse = (data: any) => {
+    if (!user?.organizationName) return;
+    
+    addItem('courses', {
+      ...data,
+      college: user.organizationName,
+      students: 0
+    });
+    
+    loadData();
+    toast.success("Course added successfully");
+  };
+
+  const handleEditCourse = (data: any) => {
+    updateItem('courses', editingItem.id, data);
+    loadData();
+    setIsEditModalOpen(false);
+    toast.success("Course updated successfully");
+  };
+
+  const handleDeleteCourse = (id: number) => {
+    deleteItem('courses', id);
+    loadData();
+    toast.success("Course deleted successfully");
+  };
+
+  const openEditModal = (item: any, type: 'student' | 'course') => {
+    const editItem = type === 'student' ? {
+      ...item,
+      completed: item.completed.toString()
+    } : item;
+    
+    setEditingItem({...editItem, type});
+    setIsEditModalOpen(true);
+  };
 
   if (!user) return null;
 
@@ -67,9 +205,9 @@ const CollegeDashboard = () => {
                     <Users className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{mockStudents.length}</div>
+                    <div className="text-2xl font-bold">{students.length}</div>
                     <p className="text-xs text-muted-foreground">
-                      +2 from last month
+                      Updated just now
                     </p>
                   </CardContent>
                 </Card>
@@ -81,9 +219,9 @@ const CollegeDashboard = () => {
                     <BookOpen className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{mockCourses.length}</div>
+                    <div className="text-2xl font-bold">{courses.length}</div>
                     <p className="text-xs text-muted-foreground">
-                      +1 from last month
+                      Updated just now
                     </p>
                   </CardContent>
                 </Card>
@@ -166,10 +304,18 @@ const CollegeDashboard = () => {
             <TabsContent value="students" className="space-y-4">
               <div className="flex justify-between items-center">
                 <h2 className="text-xl font-bold">Students</h2>
-                <Button className="bg-blue-800">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Student
-                </Button>
+                <EntityModal
+                  title="Add New Student"
+                  description="Enter student details below"
+                  fields={studentFields}
+                  onSave={handleAddStudent}
+                  triggerButton={
+                    <Button className="bg-blue-800">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Student
+                    </Button>
+                  }
+                />
               </div>
               
               <Card>
@@ -186,7 +332,7 @@ const CollegeDashboard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {mockStudents.map(student => (
+                      {students.map(student => (
                         <tr key={student.id} className="border-b">
                           <td className="p-4">{student.name}</td>
                           <td className="p-4">{student.regNumber}</td>
@@ -196,19 +342,50 @@ const CollegeDashboard = () => {
                             <span className={`px-2 py-1 rounded-full text-xs ${
                               student.status === "Active" 
                                 ? "bg-green-100 text-green-800" 
-                                : "bg-yellow-100 text-yellow-800"
+                                : student.status === "Completed"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : "bg-yellow-100 text-yellow-800"
                             }`}>
                               {student.status}
                             </span>
                           </td>
                           <td className="p-4 text-center">
                             <div className="flex justify-center space-x-2">
-                              <Button variant="outline" size="sm">View</Button>
-                              <Button variant="outline" size="sm">Attendance</Button>
+                              <Button variant="outline" size="sm" onClick={() => openEditModal(student, 'student')}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="outline" size="sm">
+                                    <Trash className="h-4 w-4 text-red-500" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This will permanently delete this student's data.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteStudent(student.id)} className="bg-red-500 text-white">
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </div>
                           </td>
                         </tr>
                       ))}
+                      {students.length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="p-4 text-center text-gray-500">
+                            No students found. Add a new student using the button above.
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </CardContent>
@@ -219,10 +396,18 @@ const CollegeDashboard = () => {
               <div className="flex justify-between items-center">
                 <h2 className="text-xl font-bold">Courses</h2>
                 <div className="space-x-2">
-                  <Button className="bg-blue-800">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Course
-                  </Button>
+                  <EntityModal
+                    title="Add New Course"
+                    description="Enter course details below"
+                    fields={courseFields}
+                    onSave={handleAddCourse}
+                    triggerButton={
+                      <Button className="bg-blue-800">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Course
+                      </Button>
+                    }
+                  />
                   <Button variant="outline">
                     <Plus className="mr-2 h-4 w-4" />
                     Add Subject
@@ -243,20 +428,51 @@ const CollegeDashboard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {mockCourses.map(course => (
+                      {courses.map(course => (
                         <tr key={course.id} className="border-b">
                           <td className="p-4">{course.name}</td>
-                          <td className="p-4 text-center">{course.students}</td>
+                          <td className="p-4 text-center">{
+                            students.filter(s => s.course === course.name).length
+                          }</td>
                           <td className="p-4 text-center">{course.subjects}</td>
                           <td className="p-4 text-center">{course.duration}</td>
                           <td className="p-4 text-center">
                             <div className="flex justify-center space-x-2">
-                              <Button variant="outline" size="sm">View</Button>
-                              <Button variant="outline" size="sm">Subjects</Button>
+                              <Button variant="outline" size="sm" onClick={() => openEditModal(course, 'course')}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="outline" size="sm">
+                                    <Trash className="h-4 w-4 text-red-500" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This will permanently delete this course and may affect student data.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteCourse(course.id)} className="bg-red-500 text-white">
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </div>
                           </td>
                         </tr>
                       ))}
+                      {courses.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="p-4 text-center text-gray-500">
+                            No courses found. Add a new course using the button above.
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </CardContent>
@@ -281,10 +497,14 @@ const CollegeDashboard = () => {
                       <div>
                         <label className="block text-sm font-medium mb-1">Select Course</label>
                         <select className="w-full border rounded-md p-2">
-                          <option>Computer Science</option>
-                          <option>Electronics</option>
-                          <option>Mechanical Engineering</option>
-                          <option>Civil Engineering</option>
+                          {courses.map(course => (
+                            <option key={course.id} value={course.id}>
+                              {course.name}
+                            </option>
+                          ))}
+                          {courses.length === 0 && (
+                            <option disabled>No courses available</option>
+                          )}
                         </select>
                       </div>
                       <div>
@@ -299,11 +519,14 @@ const CollegeDashboard = () => {
                       <div>
                         <label className="block text-sm font-medium mb-1">Select Student</label>
                         <select className="w-full border rounded-md p-2">
-                          {mockStudents.map(student => (
+                          {students.map(student => (
                             <option key={student.id} value={student.id}>
                               {student.name} ({student.regNumber})
                             </option>
                           ))}
+                          {students.length === 0 && (
+                            <option disabled>No students available</option>
+                          )}
                         </select>
                       </div>
                     </div>
@@ -450,6 +673,19 @@ const CollegeDashboard = () => {
           </div>
         </Tabs>
       </div>
+
+      {/* Edit modal for students and courses */}
+      {editingItem && (
+        <EntityModal
+          title={`Edit ${editingItem.type === 'student' ? 'Student' : 'Course'}`}
+          description={`Update ${editingItem.type === 'student' ? 'student' : 'course'} details`}
+          fields={editingItem.type === 'student' ? studentFields : courseFields}
+          onSave={editingItem.type === 'student' ? handleEditStudent : handleEditCourse}
+          initialData={editingItem}
+          open={isEditModalOpen}
+          onOpenChange={setIsEditModalOpen}
+        />
+      )}
     </MainLayout>
   );
 };

@@ -1,28 +1,103 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogOut, Plus, School, Users } from "lucide-react";
-
-// Mock data for colleges and students
-const mockColleges = [
-  { id: 1, name: "Delhi Technical College", district: "North Delhi", state: "Delhi", students: 120 },
-  { id: 2, name: "North Delhi Institute", district: "North Delhi", state: "Delhi", students: 95 },
-];
-
-const mockStudents = [
-  { id: 1, name: "Rahul Sharma", college: "Delhi Technical College", course: "Computer Science", completed: true },
-  { id: 2, name: "Priya Singh", college: "North Delhi Institute", course: "Electronics", completed: false },
-  { id: 3, name: "Sunil Kumar", college: "Delhi Technical College", course: "Mechanical", completed: true },
-  { id: 4, name: "Meena Kumari", college: "North Delhi Institute", course: "Civil", completed: true }
-];
+import { LogOut, Plus, School, Users, Pencil, Trash } from "lucide-react";
+import { EntityModal } from "@/components/shared/EntityModal";
+import {
+  initializeLocalStorage,
+  getColleges,
+  getStudents,
+  addItem,
+  updateItem,
+  deleteItem
+} from "@/utils/localStorage";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 const DistrictDashboard = () => {
   const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
+  const [colleges, setColleges] = useState<any[]>([]);
+  const [students, setStudents] = useState<any[]>([]);
+  const [editingCollege, setEditingCollege] = useState<any>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  // Fields definitions for entity forms
+  const collegeFields = [
+    { name: "name", label: "Name", type: "text" },
+    { name: "district", label: "District", type: "text" },
+    { name: "state", label: "State", type: "text" },
+  ];
+
+  useEffect(() => {
+    // Initialize localStorage with default data if not already present
+    initializeLocalStorage();
+    
+    // Load data from localStorage specific to this district
+    loadData();
+  }, [user]);
+
+  const loadData = () => {
+    if (!user?.district) return;
+    
+    const loadedColleges = getColleges(user.district);
+    const districtStudents: any[] = [];
+    
+    // Get all students that belong to colleges in this district
+    loadedColleges.forEach(college => {
+      const collegeStudents = getStudents(college.name);
+      districtStudents.push(...collegeStudents);
+    });
+    
+    setColleges(loadedColleges);
+    setStudents(districtStudents);
+  };
+
+  const handleAddCollege = (data: any) => {
+    if (!user?.district || !user?.state) return;
+    
+    addItem('colleges', {
+      ...data, 
+      district: user.district, 
+      state: user.state,
+      students: 0
+    });
+    
+    loadData();
+    toast.success("College added successfully");
+  };
+
+  const handleEditCollege = (data: any) => {
+    updateItem('colleges', editingCollege.id, data);
+    loadData();
+    setIsEditModalOpen(false);
+    toast.success("College updated successfully");
+  };
+
+  const handleDeleteCollege = (id: number) => {
+    deleteItem('colleges', id);
+    loadData();
+    toast.success("College deleted successfully");
+  };
+
+  const openEditModal = (college: any) => {
+    setEditingCollege(college);
+    setIsEditModalOpen(true);
+  };
 
   if (!user) return null;
 
@@ -62,9 +137,9 @@ const DistrictDashboard = () => {
                     <School className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{mockColleges.length}</div>
+                    <div className="text-2xl font-bold">{colleges.length}</div>
                     <p className="text-xs text-muted-foreground">
-                      +1 from last month
+                      Updated just now
                     </p>
                   </CardContent>
                 </Card>
@@ -76,9 +151,9 @@ const DistrictDashboard = () => {
                     <Users className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{mockStudents.length}</div>
+                    <div className="text-2xl font-bold">{students.length}</div>
                     <p className="text-xs text-muted-foreground">
-                      +2 from last month
+                      Updated just now
                     </p>
                   </CardContent>
                 </Card>
@@ -101,9 +176,11 @@ const DistrictDashboard = () => {
                     </svg>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">3</div>
+                    <div className="text-2xl font-bold">
+                      {students.filter(student => student.completed).length}
+                    </div>
                     <p className="text-xs text-muted-foreground">
-                      +1 from last month
+                      Updated just now
                     </p>
                   </CardContent>
                 </Card>
@@ -141,10 +218,18 @@ const DistrictDashboard = () => {
             <TabsContent value="colleges" className="space-y-4">
               <div className="flex justify-between items-center">
                 <h2 className="text-xl font-bold">Colleges & Training Providers</h2>
-                <Button className="bg-blue-800">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add College
-                </Button>
+                <EntityModal
+                  title="Add New College"
+                  description="Enter college details below"
+                  fields={collegeFields}
+                  onSave={handleAddCollege}
+                  triggerButton={
+                    <Button className="bg-blue-800">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add College
+                    </Button>
+                  }
+                />
               </div>
               
               <Card>
@@ -160,17 +245,49 @@ const DistrictDashboard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {mockColleges.map(college => (
+                      {colleges.map(college => (
                         <tr key={college.id} className="border-b">
                           <td className="p-4">{college.name}</td>
                           <td className="p-4">{college.district}</td>
                           <td className="p-4">{college.state}</td>
                           <td className="p-4 text-right">{college.students}</td>
                           <td className="p-4 text-center">
-                            <Button variant="outline" size="sm">View</Button>
+                            <div className="flex justify-center space-x-2">
+                              <Button variant="outline" size="sm" onClick={() => openEditModal(college)}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="outline" size="sm">
+                                    <Trash className="h-4 w-4 text-red-500" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This will permanently delete the college and all associated data.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteCollege(college.id)} className="bg-red-500 text-white">
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
                           </td>
                         </tr>
                       ))}
+                      {colleges.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="p-4 text-center text-gray-500">
+                            No colleges found. Add a new college using the button above.
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </CardContent>
@@ -195,7 +312,7 @@ const DistrictDashboard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {mockStudents.map(student => (
+                      {students.map(student => (
                         <tr key={student.id} className="border-b">
                           <td className="p-4">{student.name}</td>
                           <td className="p-4">{student.college}</td>
@@ -214,6 +331,13 @@ const DistrictDashboard = () => {
                           </td>
                         </tr>
                       ))}
+                      {students.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="p-4 text-center text-gray-500">
+                            No students found in this district's colleges.
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </CardContent>
@@ -222,6 +346,19 @@ const DistrictDashboard = () => {
           </div>
         </Tabs>
       </div>
+
+      {/* Edit modal for colleges */}
+      {editingCollege && (
+        <EntityModal
+          title="Edit College"
+          description="Update college details"
+          fields={collegeFields}
+          onSave={handleEditCollege}
+          initialData={editingCollege}
+          open={isEditModalOpen}
+          onOpenChange={setIsEditModalOpen}
+        />
+      )}
     </MainLayout>
   );
 };

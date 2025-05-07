@@ -1,28 +1,115 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogOut, Plus, School, Users } from "lucide-react";
-
-// Mock data for colleges and students
-const mockColleges = [
-  { id: 1, name: "Delhi Technical College", district: "North Delhi", state: "Delhi", students: 120 },
-  { id: 2, name: "South Delhi Polytechnic", district: "South Delhi", state: "Delhi", students: 85 },
-  { id: 3, name: "East Delhi Institute", district: "East Delhi", state: "Delhi", students: 63 }
-];
-
-const mockStudents = [
-  { id: 1, name: "Rahul Sharma", college: "Delhi Technical College", course: "Computer Science", completed: true },
-  { id: 2, name: "Priya Singh", college: "South Delhi Polytechnic", course: "Electronics", completed: false },
-  { id: 3, name: "Amit Kumar", college: "East Delhi Institute", course: "Mechanical", completed: true }
-];
+import { LogOut, Plus, School, Users, Pencil, Trash } from "lucide-react";
+import { EntityModal } from "@/components/shared/EntityModal";
+import {
+  initializeLocalStorage,
+  getColleges,
+  getDistricts,
+  getStudents,
+  addItem,
+  updateItem,
+  deleteItem
+} from "@/utils/localStorage";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 const StateDashboard = () => {
   const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
+  const [colleges, setColleges] = useState<any[]>([]);
+  const [districts, setDistricts] = useState<any[]>([]);
+  const [students, setStudents] = useState<any[]>([]);
+  const [editingItem, setEditingItem] = useState<any>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  // Fields definitions for entity forms
+  const collegeFields = [
+    { name: "name", label: "Name", type: "text" },
+    { name: "district", label: "District", type: "select", options: districts.map(d => ({ value: d.name, label: d.name })) },
+    { name: "state", label: "State", type: "text" },
+  ];
+  
+  const districtFields = [
+    { name: "name", label: "District Name", type: "text" },
+    { name: "state", label: "State", type: "text" },
+    { name: "coordinatorName", label: "Coordinator Name", type: "text" },
+    { name: "email", label: "Email", type: "email" },
+  ];
+
+  useEffect(() => {
+    // Initialize localStorage with default data if not already present
+    initializeLocalStorage();
+    
+    // Load data from localStorage
+    loadData();
+  }, []);
+
+  const loadData = () => {
+    const loadedColleges = getColleges();
+    const loadedDistricts = getDistricts();
+    const loadedStudents = getStudents();
+    
+    setColleges(loadedColleges);
+    setDistricts(loadedDistricts);
+    setStudents(loadedStudents);
+  };
+
+  const handleAddCollege = (data: any) => {
+    addItem('colleges', {...data, students: 0});
+    loadData();
+    toast.success("College added successfully");
+  };
+
+  const handleAddDistrict = (data: any) => {
+    addItem('districts', {...data, colleges: 0});
+    loadData();
+    toast.success("District coordinator added successfully");
+  };
+
+  const handleEditCollege = (data: any) => {
+    updateItem('colleges', editingItem.id, data);
+    loadData();
+    toast.success("College updated successfully");
+  };
+
+  const handleEditDistrict = (data: any) => {
+    updateItem('districts', editingItem.id, data);
+    loadData();
+    toast.success("District updated successfully");
+  };
+
+  const handleDeleteCollege = (id: number) => {
+    deleteItem('colleges', id);
+    loadData();
+    toast.success("College deleted successfully");
+  };
+
+  const handleDeleteDistrict = (id: number) => {
+    deleteItem('districts', id);
+    loadData();
+    toast.success("District deleted successfully");
+  };
+
+  const openEditModal = (item: any, type: 'college' | 'district') => {
+    setEditingItem({...item, type});
+    setIsEditModalOpen(true);
+  };
 
   if (!user) return null;
 
@@ -74,9 +161,9 @@ const StateDashboard = () => {
                     </svg>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">3</div>
+                    <div className="text-2xl font-bold">{districts.length}</div>
                     <p className="text-xs text-muted-foreground">
-                      +1 from last month
+                      Updated just now
                     </p>
                   </CardContent>
                 </Card>
@@ -88,9 +175,9 @@ const StateDashboard = () => {
                     <School className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{mockColleges.length}</div>
+                    <div className="text-2xl font-bold">{colleges.length}</div>
                     <p className="text-xs text-muted-foreground">
-                      +2 from last month
+                      Updated just now
                     </p>
                   </CardContent>
                 </Card>
@@ -102,9 +189,9 @@ const StateDashboard = () => {
                     <Users className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">268</div>
+                    <div className="text-2xl font-bold">{students.length}</div>
                     <p className="text-xs text-muted-foreground">
-                      +21 from last month
+                      Updated just now
                     </p>
                   </CardContent>
                 </Card>
@@ -142,10 +229,18 @@ const StateDashboard = () => {
             <TabsContent value="colleges" className="space-y-4">
               <div className="flex justify-between items-center">
                 <h2 className="text-xl font-bold">Colleges & Training Providers</h2>
-                <Button className="bg-blue-900">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add College
-                </Button>
+                <EntityModal
+                  title="Add New College"
+                  description="Enter college details below"
+                  fields={collegeFields}
+                  onSave={handleAddCollege}
+                  triggerButton={
+                    <Button className="bg-blue-900">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add College
+                    </Button>
+                  }
+                />
               </div>
               
               <Card>
@@ -161,17 +256,49 @@ const StateDashboard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {mockColleges.map(college => (
+                      {colleges.map(college => (
                         <tr key={college.id} className="border-b">
                           <td className="p-4">{college.name}</td>
                           <td className="p-4">{college.district}</td>
                           <td className="p-4">{college.state}</td>
                           <td className="p-4 text-right">{college.students}</td>
                           <td className="p-4 text-center">
-                            <Button variant="outline" size="sm">View</Button>
+                            <div className="flex justify-center space-x-2">
+                              <Button variant="outline" size="sm" onClick={() => openEditModal(college, 'college')}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="outline" size="sm">
+                                    <Trash className="h-4 w-4 text-red-500" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This will permanently delete the college and all associated data.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteCollege(college.id)} className="bg-red-500 text-white">
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
                           </td>
                         </tr>
                       ))}
+                      {colleges.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="p-4 text-center text-gray-500">
+                            No colleges found. Add a new college using the button above.
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </CardContent>
@@ -181,10 +308,18 @@ const StateDashboard = () => {
             <TabsContent value="districts" className="space-y-4">
               <div className="flex justify-between items-center">
                 <h2 className="text-xl font-bold">District Coordinators</h2>
-                <Button className="bg-blue-900">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add District Coordinator
-                </Button>
+                <EntityModal
+                  title="Add District Coordinator"
+                  description="Enter district coordinator details"
+                  fields={districtFields}
+                  onSave={handleAddDistrict}
+                  triggerButton={
+                    <Button className="bg-blue-900">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add District Coordinator
+                    </Button>
+                  }
+                />
               </div>
               
               <Card>
@@ -200,33 +335,49 @@ const StateDashboard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      <tr className="border-b">
-                        <td className="p-4">Rajesh Kumar</td>
-                        <td className="p-4">North Delhi</td>
-                        <td className="p-4">rajesh@example.com</td>
-                        <td className="p-4 text-right">5</td>
-                        <td className="p-4 text-center">
-                          <Button variant="outline" size="sm">View</Button>
-                        </td>
-                      </tr>
-                      <tr className="border-b">
-                        <td className="p-4">Sunita Gupta</td>
-                        <td className="p-4">South Delhi</td>
-                        <td className="p-4">sunita@example.com</td>
-                        <td className="p-4 text-right">8</td>
-                        <td className="p-4 text-center">
-                          <Button variant="outline" size="sm">View</Button>
-                        </td>
-                      </tr>
-                      <tr className="border-b">
-                        <td className="p-4">Anand Singh</td>
-                        <td className="p-4">East Delhi</td>
-                        <td className="p-4">anand@example.com</td>
-                        <td className="p-4 text-right">3</td>
-                        <td className="p-4 text-center">
-                          <Button variant="outline" size="sm">View</Button>
-                        </td>
-                      </tr>
+                      {districts.map(district => (
+                        <tr key={district.id} className="border-b">
+                          <td className="p-4">{district.coordinatorName}</td>
+                          <td className="p-4">{district.name}</td>
+                          <td className="p-4">{district.email}</td>
+                          <td className="p-4 text-right">{district.colleges}</td>
+                          <td className="p-4 text-center">
+                            <div className="flex justify-center space-x-2">
+                              <Button variant="outline" size="sm" onClick={() => openEditModal(district, 'district')}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="outline" size="sm">
+                                    <Trash className="h-4 w-4 text-red-500" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This will permanently delete the district coordinator.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteDistrict(district.id)} className="bg-red-500 text-white">
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                      {districts.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="p-4 text-center text-gray-500">
+                            No districts found. Add a new district coordinator using the button above.
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </CardContent>
@@ -251,7 +402,7 @@ const StateDashboard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {mockStudents
+                      {students
                         .filter(student => student.completed)
                         .map(student => (
                         <tr key={student.id} className="border-b">
@@ -268,6 +419,13 @@ const StateDashboard = () => {
                           </td>
                         </tr>
                       ))}
+                      {students.filter(student => student.completed).length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="p-4 text-center text-gray-500">
+                            No completed students found.
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </CardContent>
@@ -276,6 +434,19 @@ const StateDashboard = () => {
           </div>
         </Tabs>
       </div>
+
+      {/* Edit modal for colleges and districts */}
+      {editingItem && (
+        <EntityModal
+          title={`Edit ${editingItem.type === 'college' ? 'College' : 'District'}`}
+          description={`Update ${editingItem.type === 'college' ? 'college' : 'district'} details`}
+          fields={editingItem.type === 'college' ? collegeFields : districtFields}
+          onSave={editingItem.type === 'college' ? handleEditCollege : handleEditDistrict}
+          initialData={editingItem}
+          open={isEditModalOpen}
+          onOpenChange={setIsEditModalOpen}
+        />
+      )}
     </MainLayout>
   );
 };
